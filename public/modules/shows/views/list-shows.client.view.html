@@ -1,0 +1,29 @@
+<section data-ng-controller="ShowsController" data-ng-init="find()">
+	<div class="container">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<div class="pull-left">
+					<a data-ng-href="#!/shows/create">Ajouter</a>
+				</div>
+				<div class="pull-right">
+					<input class="search" type="text" data-ng-model="query.name"
+						placeholder="Search...">
+				</div>
+			</div>
+			<div class="panel-body">
+				<div class="row show-list">
+					<div class="col-xs-4 col-md-3"
+						data-ng-repeat="show in shows | filter:query | orderBy:'rating':true">
+						<a data-ng-href="#!/shows/{{show._id}}"> <img class="img-rounded"
+							data-ng-src="{{show.poster}}" width="100%" />
+						</a>
+						<div class="text-center">
+							<a data-ng-href="#!/shows/{{show._id}}">{{show.name}}</a>
+							<p class="text-muted">Episodes: {{show.episodes.length}}</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
