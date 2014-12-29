@@ -3,7 +3,7 @@
         <h1>New Show</h1>
     </div>
     <div class="col-md-12">
-        <form class="form-horizontal" data-ng-submit="create()" novalidate>
+        <form class="form-horizontal" data-ng-submit="search()" novalidate>
             <fieldset>
                 <div class="form-group">
                     <label class="control-label" for="name">Name</label>
@@ -20,4 +20,21 @@
             </fieldset>
         </form>
     </div>
+    <div class="container">
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<div class="row show-list">
+					<div class="col-xs-4 col-md-3"
+						data-ng-repeat="show in shows">
+						<a data-ng-href="#!/shows/{{show._id}}"> <img class="img-rounded"
+							data-ng-src="{{show.poster}}" width="100%" />
+						</a>
+						<div class="text-center">
+							<a data-ng-href="#!/shows/{{show._id}}">{{show.name}}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </section>

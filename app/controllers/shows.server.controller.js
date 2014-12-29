@@ -7,23 +7,30 @@ var mongoose = require('mongoose'),
 errorHandler = require('./errors.server.controller'),
 Show = mongoose.model('Show'),
 ThetvdbShow = mongoose.model('ThetvdbShow'),
+AllocineShow = mongoose.model('AllocineShow'),
 async = require('async'),
 request = require('request'),
 xml2js = require('xml2js'),
+allocine = require('allocine-api'),
 _ = require('lodash');
 
+var parser = xml2js.Parser({
+	explicitArray: false,
+	normalizeTags: true
+});
+
+var limit = 50;
 
 
 /**
  * Create a Show
  */
-exports.create = function(req, res) {
+
+
+exports.search = function(req, res) {
 	var show, seriesId;
 	var apiKey = 'E28F2EE8D688E1B2';
-	var parser = xml2js.Parser({
-		explicitArray: false,
-		normalizeTags: true
-	});
+
 	if (!req.body.name) {
 		return res.send(404, { message: 'Name should not be empty.' });
 	}
@@ -32,60 +39,41 @@ exports.create = function(req, res) {
 	.replace(/ /g, '_')
 	.replace(/[^\w-]+/g, '');
 
+	var filter = req.body.type ? req.body.type : '';
+	console.log(filter);
 	async.waterfall(
 			[
 			 function(callback) {
-				 request.get('http://thetvdb.com/api/GetSeries.php?seriesname=' + seriesName, function(error, response, body) {
-					 parser.parseString(body, function(err, result) {
-						 if (!result.data.series) {
-							 return res.send(404, { message: req.body.name + ' was not found.' });
-						 }
-						 seriesId = result.data.series.seriesid || result.data.series[0].seriesid;
-						 callback(err, seriesId);
-					 });
+				 // Recherche de tous les films spiderman
+				 allocine.api('search', {q: seriesName, filter: filter, count: limit}, function(error, results) {
+					 if(error) {
+						 console.log('Error : '+ error);
+						 return res.send(404, { message: req.body.name + ' was not found.' });
+					 }
+					 else {
+						 console.log('Success !');
+						 //console.log(results.feed);
+						 callback(error, results.feed);
+					 }
 				 });
 			 },
-			 function(seriesId, callback) {
-				 request.get('http://thetvdb.com/api/' + apiKey + '/series/' + seriesId + '/all/en.xml', function(error, response, body) {
-					 parser.parseString(body, function(err, result) {
-						 var series = result.data.series;
-						 var episodes = result.data.episode;
-						 console.log(series.id);
-						 show = new ThetvdbShow({});
-						 show.updateFromApi('thetvdb', series);
-						 _.each(episodes, function(episode) {
-							 show.episodes.push({
-								 season: episode.seasonnumber,
-								 episodeNumber: episode.episodenumber,
-								 episodeName: episode.episodename,
-								 firstAired: episode.firstaired,
-								 overview: episode.overview
-							 });
-						 });
-						 callback(err, show);
-					 });
+			 function(data, callback) {
+				 var shows = [];
+				 _.each(data.tvseries, function (serie) {
+					 show = new AllocineShow();
+					 show.updateFromApi('allocine', serie);
+					 shows.push(show);
 				 });
-			 },
-			 function(show, callback) {
-				 var url = 'http://thetvdb.com/banners/' + show.poster;
-				 request({ url: url, encoding: null }, function(error, response, body) {
-					 show.poster = 'data:' + response.headers['content-type'] + ';base64,' + body.toString('base64');
-					 callback(error, show);
-				 });
+				 res.jsonp({result:shows});
+
 			 }
 			 ],
-			function(err, show) {
-				show.save(function(err) {
-					if (err) {
-						if (err.code === 11000) {
-							return res.send(409, { message: show.name + ' already exists.' });
-						}
-					}
-					res.send(200);
-				});
+			 function(err, show) {
+
 			}
 	);
 };
+
 
 /**
  * Show the current Show
@@ -130,7 +118,7 @@ exports.subscribe = function(req, res) {
 		else {
 			return res.status(400).send({message: 'You are already subscribed'});
 		}
-	
+
 	});
 };
 
@@ -152,7 +140,7 @@ exports.unsubscribe = function(req, res) {
 		else {
 			return res.status(400).send({message: 'You are not subscribed'});
 		}
-	
+
 	});
 };
 
@@ -178,6 +166,7 @@ exports.delete = function(req, res) {
  * List of Shows
  */
 exports.list = function(req, res) { 
+
 	Show.find().sort('-created').populate('user', 'displayName').exec(function(err, shows) {
 		if (err) {
 			return res.status(400).send({
@@ -189,17 +178,99 @@ exports.list = function(req, res) {
 	});
 };
 
+
+var getDataFromAllocineByCodeId = function (type, id,  callback, next) {
+	 allocine.api(type, {code : id}, function(error, results) {
+		 if(error) {
+			 console.log('Error : '+ error);
+			 return next(new Error('Data ' + id));
+		 }
+		 else {
+			 callback(error, results);
+		 }
+	 });
+};
+
+var callNext = function (show, req, res, next, err) {
+	if (err) {
+		console.log(err);
+		if (err.code === 11000) {
+			return res.send(409, { message: show.name + ' already exists.' });
+		}
+	}
+	req.show = show ;
+	next();
+};
+
 /**
  * Show middleware
  */
-exports.showByID = function(req, res, next, id) { 
+exports.showByID = function(req, res, next, id) {
+	//recherche dans la BDD
 	Show.findById(id).populate('user', 'displayName').exec(function(err, show) {
-		if (err) return next(err);
-		if (! show) return next(new Error('Failed to load Show ' + id));
-		req.show = show ;
-		next();
+		if (err) {
+			return next(err);
+		}
+		if (!show) {
+			async.waterfall(
+					[
+					 //recuperation de allocine
+					 function(callback) {
+						 getDataFromAllocineByCodeId('tvseries', id, callback, next)
+					 },
+					 function(data, callback) {
+						 var newShow = new AllocineShow();
+						 newShow.updateFromApi('allocine', data.tvseries);
+						 callback(null, newShow);
+					 }
+					 ],
+					 function(err, data) {
+						show = data;
+						console.log("save");
+						show.save(function (err) {
+							callNext(show,req,res,next,err);
+						});
+					}
+			);
+		}
+		else {
+			callNext(show, req, res, next)
+		}
 	});
 };
+
+exports.getepisodes = function(req, res, next) {
+	var seasonId = req.query.seasonId;
+	var showId = req.query.showId;
+	
+	Show.findById(showId).exec(function(err, show) {
+		if (err) {
+			return next(err);
+		}
+		async.waterfall(
+				[
+				 //recuperation de allocine
+				 function(callback) {
+					 getDataFromAllocineByCodeId('season', seasonId, callback, next)
+				 },
+				 function(data, callback) {
+					 show.updateSeasonFromApi(seasonId, data.season);
+					 callback(null, show);
+				 }
+				 ],
+				 function(err, data) {
+					show = data;
+					console.log("update");
+					show.update(function (err) {
+						res.jsonp(show);
+					});
+				}
+		);
+	});
+	
+};
+
+
 
 /**
  * Show authorization middleware
@@ -210,3 +281,4 @@ exports.hasAuthorization = function(req, res, next) {
 	}
 	next();
 };
+

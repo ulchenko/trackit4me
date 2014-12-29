@@ -13,7 +13,7 @@ angular.module('shows').factory('Shows', ['$resource',
 			},
 			unsubscribe: {
 				method: 'UNSUBSCRIBE'
-			}
+			},
 		});
 	}
 ]);

@@ -9,9 +9,9 @@ angular.module('shows').config(['$stateProvider',
 			url: '/shows',
 			templateUrl: 'modules/shows/views/list-shows.client.view.html'
 		}).
-		state('createShow', {
-			url: '/shows/create',
-			templateUrl: 'modules/shows/views/create-show.client.view.html'
+		state('searchShow', {
+			url: '/shows/search',
+			templateUrl: 'modules/shows/views/search-show.client.view.html'
 		}).
 		state('viewShow', {
 			url: '/shows/:showId',
