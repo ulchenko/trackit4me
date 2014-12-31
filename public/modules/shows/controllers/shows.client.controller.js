@@ -13,8 +13,9 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 			Search.get({
 				query: this.searchShow,
 				filter: filter
-			}, function(response, err) {
-				$scope.response = response;
+			}, function(result, err) {
+				console.log(result);
+				$scope.shows = result;
 			}, function(errorResponse) {
 				$scope.error = errorResponse.data.message;
 			});
@@ -22,7 +23,7 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 
 		// Find a list of Shows
 		$scope.find = function() {
-			$scope.response = {
+			$scope.shows = {
 				result: Shows.query()
 			};
 		};
@@ -32,18 +33,19 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 			Episodes.get({
 				showId: currentShow._id,
 				seasonId: season.code
-			}, function(response, err) {
-				console.log(response);
+			}, function(result, err) {
+				console.log(result);
 			});
 		};
 
 		// Find existing Show
 		$scope.findOne = function() {
-			$scope.show = Shows.get({
+			Shows.get({
 				showId: $stateParams.showId
-			}, function(show) {
+			}, function(result) {
 				//isSubscribe
-				console.log(show);
+				$scope.show = result;
+				console.log(result);
 				$scope.isSubscribed = function() {
 					return $scope.show.subscribers.indexOf($scope.authentication.user._id) !== -1;
 				};
@@ -58,7 +60,7 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 					});
 				};
 
-				//subscribe
+				//subscribshow.e
 				$scope.unsubscribe = function() {
 					var show = $scope.show;
 					show.$unsubscribe(function() {

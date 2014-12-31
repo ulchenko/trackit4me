@@ -23,14 +23,8 @@ var limit = 50;
 
 
 /**
- * Create a Show
+ * Search a Show
  */
-exports.create = function(req, res) {
-
-	return res.status(200).send({
-		message: 'TODO'
-	});
-};
 
 exports.search = function(req, res) {
 	var show, query, filter;
@@ -38,9 +32,7 @@ exports.search = function(req, res) {
 	query = req.query.query;
 	filter = req.query.filter;
 
-
 	if (!query) {
-		console.log("aaaaaaaaaaaaaaaaaaaaa", req.query);
 		return res.send(404, {
 			message: 'Name should not be empty.'
 		});
@@ -66,8 +58,6 @@ exports.search = function(req, res) {
 							message: req.body.name + ' was not found.'
 						});
 					} else {
-						console.log('Success !');
-						//console.log(results.feed);
 						callback(error, results.feed);
 					}
 				});
@@ -97,24 +87,6 @@ exports.search = function(req, res) {
  */
 exports.read = function(req, res) {
 	res.jsonp(req.show);
-};
-
-/**
- * Update a Show
- */
-exports.update = function(req, res) {
-	var show = req.show;
-	show = _.extend(show, req.body);
-
-	show.save(function(err) {
-		if (err) {
-			return res.status(400).send({
-				message: errorHandler.getErrorMessage(err)
-			});
-		} else {
-			res.jsonp(show);
-		}
-	});
 };
 
 /**
@@ -171,24 +143,6 @@ exports.unsubscribe = function(req, res) {
 	});
 };
 
-
-/**
- * Delete an Show
- */
-exports.delete = function(req, res) {
-	var show = req.show;
-
-	show.remove(function(err) {
-		if (err) {
-			return res.status(400).send({
-				message: errorHandler.getErrorMessage(err)
-			});
-		} else {
-			res.jsonp(show);
-		}
-	});
-};
-
 /**
  * List of Shows
  */
@@ -230,6 +184,9 @@ var callNext = function(show, req, res, next, err) {
 	}
 	req.show = show;
 	next();
+	/*return res.status(200).send({
+		result: show
+	});*/
 };
 
 /**
@@ -237,10 +194,12 @@ var callNext = function(show, req, res, next, err) {
  */
 exports.showByID = function(req, res, next, id) {
 	//recherche dans la BDD
-	Show.findById(id).populate('user', 'displayName').exec(function(err, show) {
+	Show.findById(id).populate('seasons').exec(function(err, show) {
+
 		if (err) {
 			return next(err);
 		}
+
 		if (!show) {
 			async.waterfall(
 				[
@@ -251,19 +210,27 @@ exports.showByID = function(req, res, next, id) {
 					function(data, callback) {
 						var newShow = new AllocineShow();
 						newShow.updateFromApi('allocine', data.tvseries);
-						callback(null, newShow);
+						var seasons = newShow.createSeasons(newShow, data.tvseries.season);
+
+						callback(null, {
+							show: newShow,
+							seasons: seasons
+						});
 					}
 				],
 				function(err, data) {
-					show = data;
-					console.log("save");
-					show.save(function(err) {
+					show = data.show;
+					show.save(function(response, err) {
+						console.log(data.seasons);
+						show.seasons = data.seasons;
 						callNext(show, req, res, next, err);
 					});
+
 				}
 			);
 		} else {
-			callNext(show, req, res, next)
+			console.log(show);
+			callNext(show, req, res, next);
 		}
 	});
 };
@@ -297,16 +264,4 @@ exports.getepisodes = function(req, res, next) {
 		);
 	});
 
-};
-
-
-
-/**
- * Show authorization middleware
- */
-exports.hasAuthorization = function(req, res, next) {
-	if (req.show.user.id !== req.user.id) {
-		return res.status(403).send('User is not authorized');
-	}
-	next();
 };

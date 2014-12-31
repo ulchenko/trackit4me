@@ -25,7 +25,7 @@
 			<div class="panel-body">
 				<div class="row show-list">
 					<div class="col-xs-4 col-md-3"
-						data-ng-repeat="show in response.result | filter:query">
+						data-ng-repeat="show in shows.result | filter:query">
 						<a data-ng-href="#!/shows/{{show._id}}"> <img class="img-rounded"
 							data-ng-src="{{show.poster}}" width="100%" />
 						</a>

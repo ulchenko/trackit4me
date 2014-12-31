@@ -6,8 +6,7 @@ module.exports = function(app) {
 
 	// Shows Routes
 	app.route('/shows')
-		.get(shows.list)
-		.post(shows.create);
+		.get(shows.list);
 
 	app.route('/episodes/')
 		.get(shows.getepisodes);
@@ -17,10 +16,8 @@ module.exports = function(app) {
 
 	app.route('/shows/:showId')
 		.get(shows.read)
-		.put(users.requiresLogin, shows.hasAuthorization, shows.update)
 		.subscribe(users.requiresLogin, shows.subscribe)
-		.unsubscribe(users.requiresLogin, shows.unsubscribe)
-		.delete(users.requiresLogin, shows.hasAuthorization, shows.delete);
+		.unsubscribe(users.requiresLogin, shows.unsubscribe);
 
 
 	// Finish by binding the Show middleware
