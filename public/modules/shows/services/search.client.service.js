@@ -1,9 +1,9 @@
 'use strict';
 
 //Shows service used to communicate Shows REST endpoints
-angular.module('shows').factory('Episodes', ['$resource',
+angular.module('shows').factory('Search', ['$resource',
 	function($resource) {
-		return $resource('episodes/', {}, {
+		return $resource('search/', {}, {
 
 		});
 	}
