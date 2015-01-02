@@ -1,9 +1,9 @@
 'use strict';
 
 // Shows controller
-angular.module('shows').controller('ShowsController', ['$scope', '$stateParams', '$location', 'Authentication', 'Shows', 'Episodes', 'Search',
+angular.module('shows').controller('ShowsController', ['$scope', '$stateParams', '$location', 'Authentication', 'Shows', 'Seasons', 'Episodes', 'Search',
 
-	function($scope, $stateParams, $location, Authentication, Shows, Episodes, Search) {
+	function($scope, $stateParams, $location, Authentication, Shows, Seasons, Episodes, Search) {
 		$scope.authentication = Authentication;
 
 		var filter = 'tvseries';
@@ -28,11 +28,21 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 			};
 		};
 
-		// Find a list of Shows
-		$scope.getepisodes = function(currentShow, season) {
-			Episodes.get({
-				showId: currentShow._id,
-				seasonId: season.code
+		// Find a episodes of season
+		$scope.getEpisodes = function(season) {
+			Seasons.getEpisodes({
+				id: season._id
+			}, function(result, err) {
+				console.log(result);
+				$scope.episodes = result.result.episodes;
+			});
+		};
+
+		// set episode to view state or not
+		$scope.updateEpisode = function(episode) {
+			console.log(episode);
+			Episodes.update({
+				id: episode._id
 			}, function(result, err) {
 				console.log(result);
 			});

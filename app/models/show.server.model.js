@@ -6,6 +6,7 @@
 var mongoose = require('mongoose'),
 	Schema = mongoose.Schema,
 	Season = mongoose.model('Season'),
+	JSONS = require('json-serialize'),
 	util = require('util');
 
 var apiList = ['allocine'],
@@ -22,7 +23,7 @@ function BaseShowSchema() {
 		_id: Number,
 		name: String,
 		castMember: Object,
-		castingShort: Object,
+		catsingShort: Object,
 		episodeCount: Number,
 		formatTime: String,
 		genre: Object,
@@ -32,7 +33,7 @@ function BaseShowSchema() {
 		news: Object,
 		originalBroadcast: Object,
 		originalChannel: String,
-		productionStatus: Object,
+		productionStatus: String,
 		poster: String,
 		seasonCount: Number,
 		statistics: Object,
@@ -66,25 +67,16 @@ util.inherits(BaseShowSchema, Schema);
 
 var ShowSchema = new BaseShowSchema();
 
-var cleanJson = function(data) {
-	var str = JSON.stringify(data);
-	str = str.replace(/"\$\"/g, '\"value\"');
-	return JSON.parse(str);
-
-};
-
 ShowSchema.methods.createSeasons = function(model, seasons) {
 	var res = [];
-	seasons = cleanJson(seasons);
+	seasons = JSONS.cleanJson(seasons);
 	if (seasons) {
 		for (var i = 0; i < seasons.length; i++) {
 			var data = seasons[i];
-
 			var season = new Season();
 			season._id = data.code;
 			season.episodeCount = data.episodeCount;
-			season.picture = data.picture ? data.picture.href : '';
-			season.productionStatus = data.productionStatus;
+			season.productionStatus = data.productionStatus ? data.productionStatus.value : '';
 			season.yearEnd = data.yearEnd;
 			season.seasonNumber = data.seasonNumber;
 			season.yearStart = data.yearStart;
@@ -99,7 +91,7 @@ ShowSchema.methods.createSeasons = function(model, seasons) {
 };
 
 ShowSchema.methods.updateFromApi = function(api, data) {
-	data = cleanJson(data);
+	data = JSONS.cleanJson(data);
 	switch (api) {
 		case apiList[0]:
 			{
@@ -116,7 +108,7 @@ ShowSchema.methods.updateFromApi = function(api, data) {
 				this.news = data.news;
 				this.originalBroadcast = data.originalBroadcast;
 				this.originalChannel = data.originalChannel;
-				this.productionStatus = data.productionStatus;
+				this.productionStatus = data.productionStatus ? data.productionStatus.value : '';
 				this.poster = data.poster ? data.poster.href : '';
 				this.seasonCount = data.seasonCount;
 				this.statistics = data.statistics;
@@ -133,53 +125,6 @@ ShowSchema.methods.updateFromApi = function(api, data) {
 	}
 
 	this.api = api;
-};
-
-var getSeasonById = function(list, seasonId) {
-	for (var i = 0; i < list.length; i++) {
-		var res = list[i];
-		if (res.code == seasonId)
-			return res;
-	}
-	return null;
-};
-
-ShowSchema.methods.updateSeasonFromApi = function(seasonId, data) {
-	data = cleanJson(data);
-	var season = getSeasonById(this.season, seasonId);
-	if (season) {
-		switch (this.api) {
-			case apiList[0]:
-				{
-					season.episode = data.episode;
-					season.episodeCount = data.episodeCount;
-					season.picture = data.picture.href;
-					season.productionStatus = data.productionStatus;
-					season.yearEnd = data.yearEnd;
-					season.yearStart = data.yearStart;
-				}
-				break;
-			default:
-				break;
-		}
-
-	}
-};
-
-
-ShowSchema.methods.hasSeasons = function() {
-
-	switch (this.api) {
-		case apiList[0]:
-			{
-				return this.season != null && this.season != undefined;
-			}
-			break;
-			break;
-		default:
-			return false;
-			break;
-	}
 };
 
 var ThetvdbShowSchema = new BaseShowSchema({

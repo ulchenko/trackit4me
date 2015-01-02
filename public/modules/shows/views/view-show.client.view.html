@@ -8,38 +8,45 @@
 						<div class="text-center" data-ng-if="authentication.user">
 							<div data-ng-show="!isSubscribed()">
 								<button data-ng-click="subscribe()" class="btn btn-block btn-success">
-									<span class="glyphicon glyphicon-plus"></span> Subscribe
+								<span class="glyphicon glyphicon-plus"></span> Subscribe
 								</button>
 							</div>
 							<div data-ng-show="isSubscribed()">
 								<button data-ng-click="unsubscribe()"
-									class="btn btn-block btn-danger">
-									<span class="glyphicon glyphicon-minus"></span> Unsubscribe
+								class="btn btn-block btn-danger">
+								<span class="glyphicon glyphicon-minus"></span> Unsubscribe
 								</button>
 							</div>
 						</div>
 						<div class="text-center" data-ng-show="!authentication.user">
 							<a class="btn btn-block btn-primary" data-ng-href="#!/signin">Login to
-								Subscribe</a>
+							Subscribe</a>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-
 		<div class="panel panel-default">
 			<div class="panel-heading">
 				<span class="glyphicon glyphicon-play"></span> Saisons
 			</div>
 			<div class="panel-body">
 				<div class="episode" data-ng-repeat="season in show.seasons">
-					<button data-ng-click="getepisodes(show, season)"
-						class="btn btn-block btn-success">
-						Saison {{season.seasonNumber}}
+					<button data-ng-click="getEpisodes(season)" class="btn btn-primary" type="button">
+					Saison {{season.seasonNumber}} <span class="badge">{{season.episodeCount}}</span>
 					</button>
-					<small> {{season.episodeCount}} épisodes, </small>
+				</div>
+			</div>
+			<div></div>
+			<div class="panel-body">
+				<div class="list-group" data-ng-repeat="episode in episodes">
+					<span class="label label-default">{{episode.episodeNumberSeason}} - {{episode.title}}</span>
+					<button data-ng-click="updateEpisode(episode)" class="btn btn-primary" type="button"> VU</button>
+					<p class="navbar-text">{{episode.synopsis}}</p>
+					
 				</div>
 			</div>
 		</div>
 	</div>
+</div>
 </section>

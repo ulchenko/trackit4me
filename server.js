@@ -7,6 +7,15 @@ var init = require('./config/init')(),
 	mongoose = require('mongoose'),
 	chalk = require('chalk');
 
+/*
+ADD TO JSONS-serialise
+var cleanJson = function(data) {
+	var str = JSON.stringify(data);
+	str = str ? str.replace(/"\$\"/g, '\"value\"') : str;
+	return JSON.parse(str);
+};
+*/
+
 /**
  * Main application entry file.
  * Please note that the order of loading is important.

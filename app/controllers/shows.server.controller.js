@@ -6,20 +6,19 @@
 var mongoose = require('mongoose'),
 	errorHandler = require('./errors.server.controller'),
 	Show = mongoose.model('Show'),
+	Season = mongoose.model('Season'),
+	Episode = mongoose.model('Episode'),
 	ThetvdbShow = mongoose.model('ThetvdbShow'),
 	AllocineShow = mongoose.model('AllocineShow'),
 	async = require('async'),
 	request = require('request'),
-	xml2js = require('xml2js'),
 	allocine = require('allocine-api'),
 	_ = require('lodash');
 
-var parser = xml2js.Parser({
-	explicitArray: false,
-	normalizeTags: true
-});
+var JSONS = require('json-serialize');
 
 var limit = 50;
+var json;
 
 
 /**
@@ -42,7 +41,6 @@ exports.search = function(req, res) {
 		.toLowerCase()
 		.replace(/ /g, '_')
 		.replace(/[^\w-]+/g, '');
-	console.log(seriesName);
 	async.waterfall(
 		[
 			function(callback) {
@@ -53,7 +51,6 @@ exports.search = function(req, res) {
 					count: limit
 				}, function(error, results) {
 					if (error) {
-						console.log('Error : ' + error);
 						return res.send(404, {
 							message: req.body.name + ' was not found.'
 						});
@@ -86,6 +83,7 @@ exports.search = function(req, res) {
  * Show the current Show
  */
 exports.read = function(req, res) {
+	console.log("read");
 	res.jsonp(req.show);
 };
 
@@ -100,7 +98,6 @@ exports.subscribe = function(req, res) {
 			});
 		if (show.subscribers.indexOf(req.user.id) === -1) {
 			show.subscribers.push(req.user.id);
-			console.log(show.subscribers);
 			show.save(function(err) {
 				if (err) return res.status(400).send({
 					message: 'Failed to save Show ' + req.show.id
@@ -165,7 +162,6 @@ var getDataFromAllocineByCodeId = function(type, id, callback, next) {
 		code: id
 	}, function(error, results) {
 		if (error) {
-			console.log('Error : ' + error);
 			return next(new Error('Data ' + id));
 		} else {
 			callback(error, results);
@@ -175,7 +171,6 @@ var getDataFromAllocineByCodeId = function(type, id, callback, next) {
 
 var callNext = function(show, req, res, next, err) {
 	if (err) {
-		console.log(err);
 		if (err.code === 11000) {
 			return res.send(409, {
 				message: show.name + ' already exists.'
@@ -184,16 +179,16 @@ var callNext = function(show, req, res, next, err) {
 	}
 	req.show = show;
 	next();
-	/*return res.status(200).send({
-		result: show
-	});*/
 };
 
 /**
  * Show middleware
  */
+
 exports.showByID = function(req, res, next, id) {
 	//recherche dans la BDD
+	console.log("showbyid");
+
 	Show.findById(id).populate('seasons').exec(function(err, show) {
 
 		if (err) {
@@ -211,35 +206,27 @@ exports.showByID = function(req, res, next, id) {
 						var newShow = new AllocineShow();
 						newShow.updateFromApi('allocine', data.tvseries);
 						var seasons = newShow.createSeasons(newShow, data.tvseries.season);
-
-						callback(null, {
-							show: newShow,
-							seasons: seasons
-						});
+						json = JSONS.serialize(newShow);
+						json.seasons = seasons;
+						callback(null, newShow);
 					}
 				],
 				function(err, data) {
-					show = data.show;
-					show.save(function(response, err) {
-						console.log(data.seasons);
-						show.seasons = data.seasons;
-						callNext(show, req, res, next, err);
-					});
-
+					show = data;
+					show.save();
+					callNext(json, req, res, next, err);
 				}
 			);
 		} else {
-			console.log(show);
 			callNext(show, req, res, next);
 		}
 	});
 };
 
-exports.getepisodes = function(req, res, next) {
-	var seasonId = req.query.seasonId;
-	var showId = req.query.showId;
+exports.getEpisodes = function(req, res, next) {
+	var seasonId = req.params.id;
 
-	Show.findById(showId).exec(function(err, show) {
+	Season.findById(seasonId).populate('episodes').exec(function(err, season) {
 		if (err) {
 			return next(err);
 		}
@@ -250,18 +237,41 @@ exports.getepisodes = function(req, res, next) {
 					getDataFromAllocineByCodeId('season', seasonId, callback, next)
 				},
 				function(data, callback) {
-					show.updateSeasonFromApi(seasonId, data.season);
-					callback(null, show);
+					var episodes = season.createEpisodes(season, data.season.episode);
+					callback(null, episodes);
 				}
 			],
 			function(err, data) {
-				show = data;
-				console.log("update");
-				show.update(function(err) {
-					res.jsonp(show);
+				json = JSONS.serialize(season);
+				json.episodes = data;
+				season.save(function(err) {
+					season.episodes = data;
+					res.jsonp({
+						result: json
+					});
+
 				});
 			}
 		);
 	});
+};
 
+exports.updateEpisode = function(req, res, next) {
+	console.log(req.params);
+	var episodeId = req.params.id;
+	Episode.findById(episodeId).exec(function(err, episode) {
+		if (err) {
+			return next(err);
+		}
+		async.waterfall(
+			[
+				function(callback) {
+					callback(null, null);
+				}
+			],
+			function(err, data) {
+
+			}
+		);
+	});
 };

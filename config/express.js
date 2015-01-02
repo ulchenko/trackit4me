@@ -23,7 +23,6 @@ var fs = require('fs'),
 	consolidate = require('consolidate'),
 	async = require('async'),
 	request = require('request'),
-	xml2js = require('xml2js'),
 	path = require('path');
 
 module.exports = function(db) {
