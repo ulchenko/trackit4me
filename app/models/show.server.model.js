@@ -6,7 +6,6 @@
 var mongoose = require('mongoose'),
 	Schema = mongoose.Schema,
 	Season = mongoose.model('Season'),
-	JSONS = require('json-serialize'),
 	util = require('util');
 
 var apiList = ['allocine'],
@@ -69,7 +68,6 @@ var ShowSchema = new BaseShowSchema();
 
 ShowSchema.methods.createSeasons = function(model, seasons) {
 	var res = [];
-	seasons = JSONS.cleanJson(seasons);
 	if (seasons) {
 		for (var i = 0; i < seasons.length; i++) {
 			var data = seasons[i];
@@ -91,11 +89,10 @@ ShowSchema.methods.createSeasons = function(model, seasons) {
 };
 
 ShowSchema.methods.updateFromApi = function(api, data) {
-	data = JSONS.cleanJson(data);
 	switch (api) {
 		case apiList[0]:
 			{
-				this.castMember = data.castMember;
+				this.castMember = data.castMember ? data.castMember : {};
 				this.castingShort = data.castingShort;
 				this._id = data.code;
 				this.episodeCount = data.episodeCount;

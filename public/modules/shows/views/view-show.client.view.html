@@ -37,13 +37,13 @@
 					</button>
 				</div>
 			</div>
-			<div></div>
 			<div class="panel-body">
 				<div class="list-group" data-ng-repeat="episode in episodes">
-					<span class="label label-default">{{episode.episodeNumberSeason}} - {{episode.title}}</span>
-					<button data-ng-click="updateEpisode(episode)" class="btn btn-primary" type="button"> VU</button>
-					<p class="navbar-text">{{episode.synopsis}}</p>
-					
+					<div data-ng-show="!episode.seen">
+						<span class="label label-default">{{episode.episodeNumberSeason}} - {{episode.title}}</span>
+						<button data-ng-show="isSubscribed()" data-ng-click="updateEpisode(episode)" class="btn btn-primary" type="button"> VU</button>
+						<p class="navbar-text">{{episode.synopsis}}</p>
+					</div>
 				</div>
 			</div>
 		</div>

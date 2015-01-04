@@ -8,11 +8,16 @@ var init = require('./config/init')(),
 	chalk = require('chalk');
 
 /*
-ADD TO JSONS-serialise
+ADD TO Allocine-API
 var cleanJson = function(data) {
-	var str = JSON.stringify(data);
-	str = str ? str.replace(/"\$\"/g, '\"value\"') : str;
-	return JSON.parse(str);
+    if (data) {
+        var str = JSON.stringify(data);
+        str = str ? str.replace(/"\$\"/g, '\"value\"') : str;
+        console.log(str);
+        return JSON.parse(str);
+    } else {
+        return data;
+    }
 };
 */
 

@@ -1,20 +1,28 @@
 'use strict';
 
 // Shows controller
-angular.module('shows').controller('ShowsController', ['$scope', '$stateParams', '$location', 'Authentication', 'Shows', 'Seasons', 'Episodes', 'Search',
+angular.module('shows').controller('ShowsController', ['$scope', '$stateParams', '$location', 'Authentication', 'Shows', 'MyShows',
+	'Seasons', 'Episodes', 'Search',
 
-	function($scope, $stateParams, $location, Authentication, Shows, Seasons, Episodes, Search) {
+	function($scope, $stateParams, $location, Authentication, Shows, MyShows, Seasons, Episodes, Search) {
 		$scope.authentication = Authentication;
 
 		var filter = 'tvseries';
-
+		$scope.searchMode = false;
+		$scope.listTitle = "Autres Séries";
 		// Search a Show
+
+	$scope.userIsLogged = function() {
+			return angular.isDefined($scope.authentication.user.id); 
+		};
+
 		$scope.search = function() {
 			Search.get({
 				query: this.searchShow,
 				filter: filter
 			}, function(result, err) {
-				console.log(result);
+				$scope.searchMode = true;
+				$scope.listTitle = "Résultats";
 				$scope.shows = result;
 			}, function(errorResponse) {
 				$scope.error = errorResponse.data.message;
@@ -22,10 +30,17 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 		};
 
 		// Find a list of Shows
-		$scope.find = function() {
+		$scope.findHomeShows = function() {
 			$scope.shows = {
 				result: Shows.query()
 			};
+			if ($scope.authentication.user) {
+				$scope.myshows = MyShows.query();
+			}
+		};
+
+		$scope.hasEpisodeNotSeen = function(season) {
+			return true;
 		};
 
 		// Find a episodes of season
@@ -40,11 +55,10 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 
 		// set episode to view state or not
 		$scope.updateEpisode = function(episode) {
-			console.log(episode);
 			Episodes.update({
 				id: episode._id
 			}, function(result, err) {
-				console.log(result);
+				episode.seen = result.seen;
 			});
 		};
 
@@ -55,31 +69,32 @@ angular.module('shows').controller('ShowsController', ['$scope', '$stateParams',
 			}, function(result) {
 				//isSubscribe
 				$scope.show = result;
-				console.log(result);
 				$scope.isSubscribed = function() {
 					return $scope.show.subscribers.indexOf($scope.authentication.user._id) !== -1;
 				};
+			});
+		};
 
-				//subscribe
-				$scope.subscribe = function() {
-					var show = $scope.show;
-					show.$subscribe(function() {
-						$location.path('shows/' + show._id);
-					}, function(errorResponse) {
-						$scope.error = errorResponse.data.message;
-					});
-				};
 
-				//subscribshow.e
-				$scope.unsubscribe = function() {
-					var show = $scope.show;
-					show.$unsubscribe(function() {
-						$location.path('shows/' + show._id);
-					}, function(errorResponse) {
-						$scope.error = errorResponse.data.message;
-					});
-				};
+		//subscribe
+		$scope.subscribe = function() {
+			var show = $scope.show;
+			var seasons = show.seasons;
+			show.$subscribe(function(result, err) {
+				show.seasons = seasons;
+			}, function(errorResponse) {
+				$scope.error = errorResponse.data.message;
+			});
+		};
 
+		//subscrib a show
+		$scope.unsubscribe = function() {
+			var show = $scope.show;
+			var seasons = show.seasons;
+			show.$unsubscribe(function(result, err) {
+				show.seasons = seasons;
+			}, function(errorResponse) {
+				$scope.error = errorResponse.data.message;
 			});
 		};
 	}

@@ -1,27 +1,50 @@
-<section data-ng-controller="ShowsController" data-ng-init="find()">
-    <div class="page-header">
-        <h1>Show</h1>
-    </div>
-    <div class="col-md-12">
-        <form class="form-horizontal" data-ng-submit="search()" novalidate>
-            <fieldset>
-                <div class="form-group">
-                    <div class="controls">
-                        <input type="text" data-ng-model="searchShow" id="name" class="form-control" placeholder="Search" required>
-                    </div>
-                </div>
+<section data-ng-controller="ShowsController" data-ng-init="findHomeShows()">
+	<div class="page-header">
+		<h1>Show</h1>
+	</div>
+	<div class="col-md-12">
+		<form class="form-horizontal" data-ng-submit="search()" novalidate>
+			<fieldset>
+				<div class="form-group">
+					<div class="controls">
+						<input type="text" data-ng-model="searchShow" id="name" class="form-control" placeholder="Search" required>
+					</div>
+				</div>
 				<div data-ng-show="error" class="text-danger">
 					<strong data-ng-bind="error"></strong>
 				</div>
-            </fieldset>
-        </form>
-    </div>
-    <div class="pull-right">
-		<input class="search" type="text" data-ng-model="query.name"
-				placeholder="Filter..." />
+			</fieldset>
+		</form>
 	</div>
-    <div class="container">
+	<div class="pull-right">
+		<input class="search" type="text" data-ng-model="query.name"
+		placeholder="Filter..." />
+	</div>
+	<div class="container" data-ng-show="!searchMode && userIsLogged()">
 		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">Mes Séries</h3>
+			</div>
+			<div class="panel-body">
+				<div class="row show-list">
+					<div class="col-xs-4 col-md-3"
+						data-ng-repeat="show in myshows | filter:query">
+						<a data-ng-href="#!/shows/{{show._id}}"> <img class="img-rounded"
+							data-ng-src="{{show.poster}}" width="100%" />
+						</a>
+						<div class="text-center">
+							<a data-ng-href="#!/shows/{{show._id}}">{{show.name}}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">{{listTitle}}</h3>
+			</div>
 			<div class="panel-body">
 				<div class="row show-list">
 					<div class="col-xs-4 col-md-3"

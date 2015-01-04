@@ -25,12 +25,13 @@ function BaseShowSchema() {
 		originalTitle: String,
 		synopsis: String,
 		title: String,
+		seen: Boolean,
 		seasonId: {
 			type: Number,
 			ref: 'Season'
 		},
 		viewers: [{
-			type: Number,
+			type: Schema.ObjectId,
 			ref: 'User'
 		}]
 	});

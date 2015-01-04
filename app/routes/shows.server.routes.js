@@ -13,6 +13,10 @@ module.exports = function(app) {
 		.subscribe(users.requiresLogin, shows.subscribe)
 		.unsubscribe(users.requiresLogin, shows.unsubscribe);
 
+	// Shows Routes
+	app.route('/myshows')
+		.get(users.requiresLogin, shows.myshows);
+
 	app.route('/search/')
 		.get(shows.search);
 
@@ -23,7 +27,7 @@ module.exports = function(app) {
 		.get(shows.getEpisodes);
 
 	app.route('/episodes/:id')
-		.put(shows.updateEpisode);
+		.put(users.requiresLogin, shows.updateEpisode);
 
 
 	// Finish by binding the Show middleware

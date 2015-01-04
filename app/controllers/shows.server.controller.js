@@ -50,9 +50,9 @@ exports.search = function(req, res) {
 					filter: filter,
 					count: limit
 				}, function(error, results) {
-					if (error) {
+					if (error || (results.feed && results.feed.totalResults == 0)) {
 						return res.send(404, {
-							message: req.body.name + ' was not found.'
+							message: seriesName + ' was not found.'
 						});
 					} else {
 						callback(error, results.feed);
@@ -144,14 +144,24 @@ exports.unsubscribe = function(req, res) {
  * List of Shows
  */
 exports.list = function(req, res) {
-
 	Show.find().sort('-created').populate('user', 'displayName').exec(function(err, shows) {
 		if (err) {
 			return res.status(400).send({
 				message: errorHandler.getErrorMessage(err)
 			});
 		} else {
-			res.jsonp(shows);
+			if (req.user) {
+				var userId = req.user.id;
+				var myshows = [];
+				_.each(shows, function(show) {
+					if (show.subscribers.indexOf(userId) == -1) {
+						myshows.push(show);
+					}
+				});
+				res.jsonp(myshows);
+			} else {
+				res.jsonp(shows);
+			}
 		}
 	});
 };
@@ -162,7 +172,7 @@ var getDataFromAllocineByCodeId = function(type, id, callback, next) {
 		code: id
 	}, function(error, results) {
 		if (error) {
-			return next(new Error('Data ' + id));
+			return next(errorHandler.getErrorMessage(error));
 		} else {
 			callback(error, results);
 		}
@@ -204,6 +214,7 @@ exports.showByID = function(req, res, next, id) {
 					},
 					function(data, callback) {
 						var newShow = new AllocineShow();
+						console.log(data);
 						newShow.updateFromApi('allocine', data.tvseries);
 						var seasons = newShow.createSeasons(newShow, data.tvseries.season);
 						json = JSONS.serialize(newShow);
@@ -213,8 +224,11 @@ exports.showByID = function(req, res, next, id) {
 				],
 				function(err, data) {
 					show = data;
-					show.save();
-					callNext(json, req, res, next, err);
+					//show.save();
+					show.save(function(err) {
+						callNext(json, req, res, next, err);
+					});
+
 				}
 			);
 		} else {
@@ -237,19 +251,19 @@ exports.getEpisodes = function(req, res, next) {
 					getDataFromAllocineByCodeId('season', seasonId, callback, next)
 				},
 				function(data, callback) {
-					var episodes = season.createEpisodes(season, data.season.episode);
+					var episodes = [];
+					if (data.season && data.season.episode) {
+						episodes = season.createEpisodes(req.user, season, data.season.episode);
+					}
 					callback(null, episodes);
 				}
 			],
 			function(err, data) {
 				json = JSONS.serialize(season);
 				json.episodes = data;
-				season.save(function(err) {
-					season.episodes = data;
-					res.jsonp({
-						result: json
-					});
-
+				season.save();
+				res.jsonp({
+					result: json
 				});
 			}
 		);
@@ -257,7 +271,6 @@ exports.getEpisodes = function(req, res, next) {
 };
 
 exports.updateEpisode = function(req, res, next) {
-	console.log(req.params);
 	var episodeId = req.params.id;
 	Episode.findById(episodeId).exec(function(err, episode) {
 		if (err) {
@@ -266,12 +279,47 @@ exports.updateEpisode = function(req, res, next) {
 		async.waterfall(
 			[
 				function(callback) {
-					callback(null, null);
+					episode.viewers.push(req.user.id);
+					episode.save(function(err) {
+						if (err) return res.status(400).send({
+							message: 'Failed to save Episode ' + episodeId
+						});
+					});
+					callback();
 				}
 			],
 			function(err, data) {
-
+				episode.seen = true;
+				res.jsonp(episode);
 			}
 		);
+	});
+};
+
+/**
+ * List of MyShows
+ */
+exports.myshows = function(req, res) {
+	var userId = req.user.id;
+
+	Show.find({
+		"subscribers": {
+			$exists: true
+		},
+		$where: "this.subscribers.length > 0"
+	}).exec(function(err, shows) {
+		if (err) {
+			return res.status(400).send({
+				message: errorHandler.getErrorMessage(err)
+			});
+		} else {
+			var myshows = [];
+			_.each(shows, function(show) {
+				if (show.subscribers.indexOf(userId) != -1) {
+					myshows.push(show);
+				}
+			});
+			res.jsonp(myshows);
+		}
 	});
 };

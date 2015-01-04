@@ -6,7 +6,6 @@
 var mongoose = require('mongoose'),
 	Schema = mongoose.Schema,
 	Episode = mongoose.model('Episode'),
-	JSONS = require('json-serialize'),
 	util = require('util');
 
 /**
@@ -25,6 +24,7 @@ function BaseShowSchema() {
 			type: Number,
 			ref: 'Show'
 		},
+		seen: Boolean,
 		productionStatus: String,
 		yearEnd: String,
 		yearStart: String,
@@ -39,9 +39,9 @@ util.inherits(BaseShowSchema, Schema);
 
 var SeasonSchema = new BaseShowSchema();
 
-SeasonSchema.methods.createEpisodes = function(model, episodes) {
+SeasonSchema.methods.createEpisodes = function(user, model, episodes) {
 	var res = [];
-	episodes = JSONS.cleanJson(episodes);
+
 	if (episodes) {
 		var episode;
 		for (var i = 0; i < episodes.length; i++) {
@@ -63,12 +63,13 @@ SeasonSchema.methods.createEpisodes = function(model, episodes) {
 				episode.originalBroadcastDate = data.originalBroadcastDate;
 				episode.originalTitle = data.originalTitle;
 				episode.synopsis = data.synopsis;
-				episode.title = data.title;
+				episode.title = data.title ? data.title : data.originalTitle;
 				episode.seasonId = model._id;
 				model.episodes.push(episode._id);
 				episode.save();
 			}
-			res.push(episode);
+			if (user && episode.viewers.indexOf(user.id) == -1)
+				res.push(episode);
 		};
 	}
 	return res;

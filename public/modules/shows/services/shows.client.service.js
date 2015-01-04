@@ -12,6 +12,12 @@ angular.module('shows').factory('Shows', ['$resource',
 			unsubscribe: {
 				method: 'UNSUBSCRIBE'
 			},
+			getmyshows: {
+				method: 'get',
+				params: {
+					shows: 'mine'
+				}
+			}
 		});
 	}
 ]);
